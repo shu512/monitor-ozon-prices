@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: "ozon_prices"
+      POSTGRES_USER: "shu512"
+      POSTGRES_PASSWORD: "shu512"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./init_db:/docker-entrypoint-initdb.d
+      - ./ozon-prices-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  ozon-prices-data:
+
+
+# https://habr.com/ru/articles/578744/
+# docker-compose up -d
+# docker exec -it f32e84ade0d9 bash
+# psql -U shu512 -d ozon_prices
+
+# todo оптимизировать конфиг
