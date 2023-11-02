@@ -198,12 +198,13 @@ function logStarted({ from, to ,threads }) {
     'ozon_prices.log',
     `[${dateHumanized}]: Start scanning.  From: ${from}; to: ${to}; threads: ${threads}\n`
   );
+  return date;
 }
 
 function logFinished({ from, to ,threads }, startDate) {
   const date = DateTime.now();
   const dateHumanized = date.toLocaleString(DateTime.DATETIME_FULL);
-  const duration = date.diff(startDate).seconds;
+  const duration = date.diff(startDate);
   fs.appendFileSync(
     'ozon_prices.log',
     `[${dateHumanized}]: Finish scanning. From: ${from}; to: ${to}; threads: ${threads}. Duration: ${duration.toHuman()}\n`
@@ -218,8 +219,8 @@ function logFinished({ from, to ,threads }, startDate) {
   };
 
   // const input = {
-  //   from    : 806070000,
-  //   to      : 806070000,
+  //   from    : 806070004,
+  //   to      : 806070004,
   //   threads : 1,
   // };
   
