@@ -1,8 +1,9 @@
+require('dotenv').config()
+
+const { logStarted, logFinished } = require('./utils/log');
+const { loadToDb, showDbContent } = require('./utils/db');
 const { Builder, Browser, By, ThenableWebDriver, WebElement } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
-const { Client } = require('pg');
-const fs = require('fs');
-const { DateTime, Duration } = require('luxon');
 
 const LIMIT_TRIES = 20;
 const LIMIT_BATCH = 10000;
@@ -14,14 +15,7 @@ const notExistXpath = "//div[@data-widget='error']";
 const plus18Xpath = "//span[contains(text(), 'Подтвердите возраст')]";
 
 const cloudfareId = 'challenge-running';
-
-const clientOptions = {
-  database: 'ozon_prices',
-  user: 'shu512',
-  host: 'localhost',
-  password: 'shu512',
-  port: 5432
-};
+const ozonBlockId = 'reload-button';
 
 /**
  * @param {string} priceText - e.g. "1 309 ₽"
@@ -67,6 +61,11 @@ function awaitPrice(driver) {
         await driver.manage().addCookie({ name: 'adult_user_birthdate', value: '2001-11-11' });
         await driver.navigate().refresh();
       }
+
+      elem = await driver.findElements(By.id(ozonBlockId));
+      if (elem.length > 0) {
+        await driver.navigate().refresh();
+      }
   
       i++;
       if (i >= LIMIT_TRIES) {
@@ -109,7 +108,6 @@ async function getPriceInfoFromPage(driver, id) {
  * @returns { Promise<{ price: number, productId: number } | null> }
  */
 async function runSearch(idFrom, idTo) {
-  
   // const options = new chrome.Options().addArguments('--headless=new');
   const options = new chrome.Options();
 
@@ -117,13 +115,11 @@ async function runSearch(idFrom, idTo) {
   let driver;
   let priceInfo;
 
-  for(let id = idTo; id >= idFrom; id--) {
-    driver = new Builder()
+  driver = new Builder()
       .forBrowser(Browser.CHROME)
       .setChromeOptions(options)
       .build();
-
-
+  for(let id = idTo; id >= idFrom; id--) {
     try {
       priceInfo = await getPriceInfoFromPage(driver, id);
       if (priceInfo) priceInfos.push(priceInfo);
@@ -132,55 +128,18 @@ async function runSearch(idFrom, idTo) {
         await loadToDb(priceInfos);
         priceInfos = [];
       }
-    } finally {
-      await driver.quit();
+    }
+    catch(e) {
+      console.log('catch', e);
     }
   }
+  await driver.quit();
 
   await loadToDb(priceInfos);
   priceInfos = [];
 }
 
-/**
- * prepare data to insert to db
- * @param { { price: number, productId: number }[] } priceInfos 
- * @returns {[
- *    string,
- *    number[]   
- * ]}
- * returns tuple of 2 elements.
- * - The first elem is string, e.g. ($1::int, $2::int),($3::int, $4::int),($5::int, $6::int),($7::int, $8::int)
- * - The second one is array of numbers to insert to db
- */
-function getQuery(priceInfos) {
-  const args = priceInfos.reduce((arr, cur) => [...arr, cur.productId, cur.price], []);
-  let queryArgs = priceInfos.reduce(
-    (query, cur, index) => query + `($${index * 2 + 1}::int, $${index * 2 + 2}::int),`,
-    ''
-  );
-  queryArgs = queryArgs.slice(0, queryArgs.length - 1);
-  const query = `insert into prices (product_id, price) values ${queryArgs};`;
-  return [query, args];
-}
-
-/**
- * 
- * @async
- * @param { { price: number, productId: number }[] } priceInfos 
- */
-async function loadToDb(priceInfos) {
-  if (priceInfos.length === 0) return;
-
-  const client = new Client(clientOptions);
-  await client.connect();
-
-  const [query, args] = getQuery(priceInfos);
-  
-  await client.query(query, args)
-  await client.end()
-}
-
-function calculateSearcherOptions({ from, to ,threads }) {
+function calculateSearcherOptions({ from, to, threads }) {
   const step = Math.ceil((to - from) / threads);
   const input = Array.from({ length: threads }).map((_, index) => ({
     from: step * index + from,
@@ -191,51 +150,27 @@ function calculateSearcherOptions({ from, to ,threads }) {
   return input;
 }
 
-function logStarted({ from, to ,threads }) {
-  const date = DateTime.now();
-  const dateHumanized = date.toLocaleString(DateTime.DATETIME_FULL);
-  fs.appendFileSync(
-    'ozon_prices.log',
-    `[${dateHumanized}]: Start scanning.  From: ${from}; to: ${to}; threads: ${threads}\n`
-  );
-  return date;
-}
-
-function logFinished({ from, to ,threads }, startDate) {
-  const date = DateTime.now();
-  const dateHumanized = date.toLocaleString(DateTime.DATETIME_FULL);
-  const duration = date.diff(startDate);
-  fs.appendFileSync(
-    'ozon_prices.log',
-    `[${dateHumanized}]: Finish scanning. From: ${from}; to: ${to}; threads: ${threads}. Duration: ${duration.toHuman()}\n`
-  );
-}
-
 (async function main() {
-  const input = {
-    from    : 806075000,
-    to      : 806076859,
-    threads : 10,
-  };
-
   // const input = {
-  //   from    : 806070004,
-  //   to      : 806070004,
-  //   threads : 1,
+  //   from    : 806075000,
+  //   to      : 806076859,
+  //   threads : 10,
   // };
+
+  const input = {
+    from    : 806070004,
+    to      : 806070004,
+    threads : 1,
+  };
   
   const searcherOptions = calculateSearcherOptions(input);
   const startDate = logStarted(input);
 
-  const searchers = searcherOptions.map(params => runSearch(params.from, params.to));
-  await Promise.all(searchers);
+  await Promise.all(
+    searcherOptions.map(params => runSearch(params.from, params.to))
+  );
 
   logFinished(input, startDate);
 
-  const client = new Client(clientOptions);
-  await client.connect();
-  // await client.query('DELETE FROM prices;', [])
-  const res = await client.query('SELECT product_id, price from prices;', [])
-  console.log(res.rows)
-  await client.end();
+  // showDbContent();
 })();
