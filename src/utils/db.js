@@ -37,7 +37,7 @@ function getQueryPrices(priceInfos) {
 */
 async function loadToDbPrices(priceInfos) {
   if (priceInfos.length === 0) return;
-  console.log('loadToDb:', priceInfos);
+  console.log('loadToDb:', priceInfos.length);
 
   const client = new Client(clientOptions);
   await client.connect();
@@ -77,7 +77,7 @@ function getQueryNotExistedProducts(products) {
 */
 async function loadToDbNotExistedProducts(products) {
   if (products.length === 0) return;
-  console.log('loadToDbNotExistedProducts', products);
+  console.log('loadToDbNotExistedProducts', products.length);
 
   const client = new Client(clientOptions);
   await client.connect();

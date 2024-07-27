@@ -8,34 +8,61 @@ function getPriceFromText(priceText) {
 }
 
 /**
- * Splits the range (from -> to) by the number of threads
+ * Returns actual product ids to check
  * 
  * E.g. for input
  * 
  *     {
- *       from:1, 
- *       to: 10,
+ *       from:10, 
+ *       to: 19,
  *       threads: 3
  *     }
+ * and skip = 
+ * 
+ *     [ 13, 16 ]
  * 
  * the result will be 
  *
- *     [ { from: 1, to: 3 }, { from: 4, to: 6 }, { from: 7, to: 10 } ]
- * @param {{ from: number, to: number, threads: number}} input
- * @returns {{ from: number; to: number;}[]}
+ *     [ 10, 11, 12, 14, 15, 17, 18, 19 ]
+ * @param {{ from: number, to: number }} input
+ * @param {number[]} skips array of ids to skip
+ * @returns {number[]}
  */
-function calculateSearcherOptions({ from, to, threads }) {
-  const step = Math.ceil((to - from) / threads);
-  const input = Array.from({ length: threads }).map((_, index) => ({
-    from: step * index + from,
-    to: step * (index + 1) + from - 1
-  }));
+function getActualIds({ from, to }, skips) {
+  let i = from;
+  return Array
+    .from({length: to - from + 1}, () => i++)
+    .filter(id => !skips.find(skipId => skipId === id));
+}
 
-  input[input.length - 1].to = to;
+/**
+ * Splits an array into parts
+ * 
+ * E.g. for array
+ * 
+ *     [ 10, 11, 12, 14, 15, 17, 18, 19 ]
+ * and chunks = 
+ * 
+ *     3
+ * 
+ * the result will be 
+ *
+ *     [ [ 10, 11, 12 ], [ 14, 15, 17 ], [ 18, 19 ] ]
+ * @param {number[]} array
+ * @param {number} chunks
+ * @returns {number[][]}
+ */
+function splitArray(array, chunks) {
+  let input = [];
+  for (let i = chunks; i > 0; i--) {
+    input.push(array.splice(0, Math.ceil(array.length / i)));
+  }
+
   return input;
 }
 
 module.exports = {
-  calculateSearcherOptions,
-  getPriceFromText
+  getActualIds,
+  getPriceFromText,
+  splitArray,
 };
