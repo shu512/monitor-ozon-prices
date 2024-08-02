@@ -7,13 +7,13 @@ const { logStarted, logFinished } = require('./utils/log');
 const { validateEnv } = require('./utils/validate_env');
 
 async function main() {
+  validateEnv();
+
   const input = {
     from    : 806075000,
     to      : 806120000,
-    threads : 8,
+    threads : process.env.THREADS_AMOUNT || 8,
   };
-
-  validateEnv();
 
   const startDate = logStarted(input);
 
