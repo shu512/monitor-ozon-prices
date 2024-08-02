@@ -4,6 +4,7 @@ const { runSearch } = require('./searcher');
 const { getActualIds, splitArray } = require('./utils');
 const { getNotExistedProducts } = require('./utils/db');
 const { logStarted, logFinished } = require('./utils/log');
+const { validateEnv } = require('./utils/validate_env');
 
 async function main() {
   const input = {
@@ -11,6 +12,8 @@ async function main() {
     to      : 806120000,
     threads : 8,
   };
+
+  validateEnv();
 
   const startDate = logStarted(input);
 

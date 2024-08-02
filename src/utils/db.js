@@ -1,11 +1,13 @@
 const { Client } = require('pg');
 
+const DEFULAT_PG_PORT = 5432;
+
 const clientOptions = {
-  database: 'ozon_prices',
-  user: 'shu512',
-  host: 'localhost',
-  password: 'shu512',
-  port: 5432
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || DEFULAT_PG_PORT,
 };
 
 /**

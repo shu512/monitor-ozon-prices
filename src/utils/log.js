@@ -1,6 +1,8 @@
 const fs = require('fs');
 const { DateTime } = require('luxon');
 
+const DEFAULT_FILENAME = 'ozon_prices.log';
+
 /**
  * Appends data to the file and close it
  * @param {string} filename
@@ -25,7 +27,7 @@ function append(filename, data) {
  * @returns {DateTime<true>}
  */
 function logStarted({ from, to ,threads }) {
-  const filename = process.env.LOG_FILE || 'ozon_prices.log';
+  const filename = process.env.LOG_FILE || DEFAULT_FILENAME;
   const date = DateTime.now();
   const dateHumanized = date.toLocaleString(DateTime.DATETIME_FULL);
   append(
@@ -41,7 +43,7 @@ function logStarted({ from, to ,threads }) {
  * @returns {DateTime<true>}
  */
 function logFinished({ from, to ,threads }, startDate) {
-  const filename = process.env.LOG_FILE || 'ozon_prices.log';
+  const filename = process.env.LOG_FILE || DEFAULT_FILENAME;
   const date = DateTime.now();
   const dateHumanized = date.toLocaleString(DateTime.DATETIME_FULL);
   const duration = date.diff(startDate);
