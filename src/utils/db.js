@@ -106,8 +106,19 @@ async function getNotExistedProducts(from, to) {
   return res.rows.map(obj => Number(obj.product_id));
 }
 
+async function getBorders() {
+  const client = new Client(clientOptions);
+  await client.connect();
+  const res = await client.query(`SELECT left_id, right_id FROM borders ORDER BY id DESC LIMIT 5`, [])
+  await client.end();
+  if (res.rowCount === 0) throw Error('[Error] Borders table is empty');
+
+  return { leftBorder: Number(res.rows[0].left_id), rightBorder: Number(res.rows[0].right_id) };
+}
+
 module.exports = {
   loadToDbPrices,
   loadToDbNotExistedProducts,
   getNotExistedProducts,
+  getBorders,
 }

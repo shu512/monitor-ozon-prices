@@ -18,3 +18,10 @@ CREATE TABLE not_existed_products (
 );
 ALTER TABLE not_existed_products
 ALTER COLUMN last_date_check SET DEFAULT NOW();
+
+CREATE TYPE border_enum AS ENUM ('left', 'right');
+CREATE TABLE borders (
+  id BIGSERIAL PRIMARY KEY,
+  left_id bigint,
+  right_id bigint
+);
