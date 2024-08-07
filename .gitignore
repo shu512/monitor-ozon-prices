@@ -1,4 +1,6 @@
 node_modules/
+ozon-prices-data
 .env
 run.log
-ozon_prices.log
+run_search.log
+errors.log
