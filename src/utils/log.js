@@ -23,8 +23,7 @@ function append(filename, data) {
     fs.appendFileSync(fd, data, 'utf8');
     logConsole(data);
   } catch (err) {
-    const msg = '[ERROR]: Unable to log to file: ';
-    logConsole(msg + err);
+    logConsole('[ERROR]: Unable to log to file: ' + err);
   } finally {
     if (fd !== undefined)
       fs.closeSync(fd);
@@ -101,8 +100,9 @@ function logFinish(leftBorder, rightBorder, startDate) {
 }
 
 module.exports = {
-  logStartSeach,
-  logFinishSearch,
+  logError,
   logStart,
   logFinish,
+  logStartSeach,
+  logFinishSearch,
 }

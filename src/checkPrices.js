@@ -1,5 +1,6 @@
 const { getPriceFromText } = require('./utils');
 const { loadToDbPrices, loadToDbNotExistedProducts } = require('./utils/db');
+const { logError } = require('./utils/log');
 const { ProductStatuses } = require('./utils/product_statuses');
 const { XPaths } = require('./utils/xpaths');
 const { Builder, Browser, By, ThenableWebDriver, WebElement } = require('selenium-webdriver');
@@ -50,7 +51,9 @@ async function checkPrices(ids) {
         skipProducts = [];
       }
     }
-    catch {}
+    catch (err) {
+      logError(`[ERROR]: Unable to process product with id ${id}: ` + err);
+    }
   }
   await driver.quit();
 
@@ -79,14 +82,11 @@ async function processPageElement(driver, id) {
   /**
   *  @type {{elem: WebElement, status: ProductStatuses } | null}
   */
-  let res;
   await driver.get(`https://www.ozon.ru/product/${id}`);
-  try {
-    res = await driver.wait(
-      awaitPrice(driver),
-      2000
-    );
-  } catch {}
+  const res = await driver.wait(
+    awaitPrice(driver),
+    2000
+  );
   if (res?.status === ProductStatuses.PRICE) {
     const price = getPriceFromText(await res.elem.getText());
     return {
