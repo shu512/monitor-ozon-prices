@@ -1,31 +1,39 @@
 require('dotenv').config()
 
-const { runSearch } = require('./searcher');
-const { getActualIds, splitArray } = require('./utils');
-const { getNotExistedProducts } = require('./utils/db');
-const { logStarted, logFinished } = require('./utils/log');
+const { runSearch } = require('./runSearch');
+const { getBorders } = require('./utils/db');
+const { logStart, logFinish } = require('./utils/log');
 const { validateEnv } = require('./utils/validate_env');
+
+const DEFAULT_THREADS = 1;
+const DEFAULT_STEP = 50000;
 
 async function main() {
   validateEnv();
 
-  const input = {
-    from    : 806075000,
-    to      : 806120000,
-    threads : process.env.THREADS_AMOUNT || 8,
-  };
+  const { leftBorder, rightBorder } = await getBorders()
+  
+  const threads = Number(process.env.THREADS_AMOUNT) || DEFAULT_THREADS;
+  const step = Number(process.env.STEP) || DEFAULT_STEP;
 
-  const startDate = logStarted(input);
+  let left = Number(process.env.START_FROM) || leftBorder;
+  let right = left + step;
 
-  const idsToSkip = await getNotExistedProducts(input.from, input.to);
-  const ids = splitArray(getActualIds(input, idsToSkip), input.threads);
-  await Promise.all(
-    ids.map(idsChuck => runSearch(idsChuck))
-  );
+  const startDate = logStart(leftBorder, rightBorder);
+  while(left < rightBorder) {
+    if (right > rightBorder) right = rightBorder;
 
-  logFinished(input, startDate);
+    await runSearch({
+      from: left,
+      to: right,
+      threads,
+    });
 
+    left = right + 1;
+    right = left + step;
+  }
+
+  logFinish(leftBorder, rightBorder, startDate);
 }
 
 main();
-
