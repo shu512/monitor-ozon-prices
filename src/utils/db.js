@@ -1,4 +1,5 @@
 const { Client } = require('pg');
+const { logConsole } = require('./log');
 
 const DEFULAT_PG_PORT = 5432;
 
@@ -9,6 +10,15 @@ const clientOptions = {
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT || DEFULAT_PG_PORT,
 };
+
+async function executeQuery(query, args) {
+  const client = new Client(clientOptions);
+  await client.connect();
+  const res = await client.query(query, args)
+  await client.end();
+
+  return res;
+}
 
 /**
  * prepare data to insert to db
@@ -39,15 +49,10 @@ function getQueryPrices(priceInfos) {
 */
 async function loadToDbPrices(priceInfos) {
   if (priceInfos.length === 0) return;
-  console.log('loadToDb:', priceInfos.length);
-
-  const client = new Client(clientOptions);
-  await client.connect();
+  logConsole('Amount of loaded product prices:', priceInfos.length);
 
   const [query, args] = getQueryPrices(priceInfos);
-  
-  await client.query(query, args)
-  await client.end()
+  await executeQuery(query, args);
 }
 
 /**
@@ -79,15 +84,10 @@ function getQueryNotExistedProducts(products) {
 */
 async function loadToDbNotExistedProducts(products) {
   if (products.length === 0) return;
-  console.log('loadToDbNotExistedProducts', products.length);
-
-  const client = new Client(clientOptions);
-  await client.connect();
+  logConsole('Amount of not existed product prices:', products.length);
 
   const [query, args] = getQueryNotExistedProducts(products);
-
-  await client.query(query, args)
-  await client.end()
+  await executeQuery(query, args);
 }
 
 /**
@@ -99,26 +99,22 @@ async function loadToDbNotExistedProducts(products) {
  * @returns {Promise(number[])}
  */
 async function getNotExistedProducts(from, to) {
-  const client = new Client(clientOptions);
-  await client.connect();
-  const res = await client.query(`SELECT product_id FROM not_existed_products WHERE product_id >= ${from} AND product_id <= ${to};`, [])
-  await client.end();
+  const res = await executeQuery(`SELECT product_id FROM not_existed_products WHERE product_id >= ${from} AND product_id <= ${to};`, []);
+
   return res.rows.map(obj => Number(obj.product_id));
 }
 
 async function getBorders() {
-  const client = new Client(clientOptions);
-  await client.connect();
-  const res = await client.query(`SELECT left_id, right_id FROM borders ORDER BY id DESC LIMIT 5`, [])
-  await client.end();
+  const res = await executeQuery(`SELECT left_id, right_id FROM borders ORDER BY id DESC LIMIT 1`, []);
   if (res.rowCount === 0) throw Error('[Error] Borders table is empty');
 
-  return { leftBorder: Number(res.rows[0].left_id), rightBorder: Number(res.rows[0].right_id) };
+  return { minId: Number(res.rows[0].left_id), maxId: Number(res.rows[0].right_id) };
 }
 
 module.exports = {
+  executeQuery,
+  getBorders,
+  getNotExistedProducts,
   loadToDbPrices,
   loadToDbNotExistedProducts,
-  getNotExistedProducts,
-  getBorders,
 }

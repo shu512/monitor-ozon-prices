@@ -11,17 +11,17 @@ const DEFAULT_STEP = 50000;
 async function main() {
   validateEnv();
 
-  const { leftBorder, rightBorder } = await getBorders()
+  const { minId, maxId } = await getBorders()
   
   const threads = Number(process.env.THREADS_AMOUNT) || DEFAULT_THREADS;
   const step = Number(process.env.STEP) || DEFAULT_STEP;
 
-  let left = Number(process.env.START_FROM) || leftBorder;
+  let left = Number(process.env.START_FROM) || minId;
   let right = left + step;
 
-  const startDate = logStart(leftBorder, rightBorder);
-  while(left < rightBorder) {
-    if (right > rightBorder) right = rightBorder;
+  const startDate = logStart(minId, maxId);
+  while(left < maxId) {
+    if (right > maxId) right = maxId;
 
     await runSearch({
       from: left,
@@ -33,7 +33,7 @@ async function main() {
     right = left + step;
   }
 
-  logFinish(leftBorder, rightBorder, startDate);
+  logFinish(minId, maxId, startDate);
 }
 
 main();

@@ -100,6 +100,7 @@ function logFinish(leftBorder, rightBorder, startDate) {
 }
 
 module.exports = {
+  logConsole,
   logError,
   logStart,
   logFinish,
